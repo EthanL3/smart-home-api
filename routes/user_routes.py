@@ -1,58 +1,57 @@
-from flask import Blueprint, request, jsonify
-from models.user import User
+from fastapi import FastAPI, APIRouter, HTTPException
+from schemas import UserCreate, UserResponse
 
-user_bp = Blueprint('user', __name__)
+app = FastAPI()
 
-users = {}
+user_router = APIRouter(prefix="/users", tags=["Users"])
 
-# User CRUD
-@user_bp.route('', methods=['POST'])
-def create_user():
-    data = request.json
-    return create_user_stub(data['name'], data['username'], data['email'], data['phone'])
+users_db = {}
 
-@user_bp.route('/<int:user_id>', methods=['GET'])
-def get_user(user_id):
-    return get_user_stub(user_id)
+# User CRUAD
+@user_router.post("", response_model=UserResponse)
+def create_user(user: UserCreate):
+    new_user_id = len(users_db) + 1
+    new_user = {"user_id": new_user_id, **user.model_dump()}
+    users_db[new_user_id] = new_user
+    return new_user
 
-@user_bp.route('/<int:user_id>', methods=['PUT'])
-def update_user(user_id):
-    data = request.json
-    return update_user_stub(user_id, data)
-
-@user_bp.route('/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    return delete_user_stub(user_id)
-
-# User CRUD Stubs
-def create_user_stub(name, username, email, phone):
-    user_id = len(users) + 1
-    for user in users.values():
-        if user.username == username:
-            return jsonify({'error': 'Username already exists'}), 400
-        if user.email == email:
-            return jsonify({'error': 'Email already exists'}), 400
-    new_user = User(user_id, name, username, email, phone)
-    users[user_id] = new_user
-    return jsonify(new_user.to_dict()), 201
-
-
-def get_user_stub(user_id):
-    user = users.get(user_id)
+@user_router.get("/{user_id}", response_model=UserResponse)
+def get_user(user_id: int):
+    user = users_db.get(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    return jsonify(user), 200
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
-def update_user_stub(user_id, data):
-    user = users.get(user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    users[user_id].update(data)
-    return jsonify(users[user_id]), 200
+@user_router.put("/{user_id}", response_model=UserResponse)
+def update_user(user_id: int, user_data: UserCreate):
+    if user_id not in users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    users_db[user_id].update(user_data.model_dump())
+    return users_db[user_id]
 
-def delete_user_stub(user_id):
-    if user_id in users:
-        del users[user_id]
-        return jsonify({'message': 'User deleted'}), 204
-    return jsonify({'error': 'User not found'}), 404
+@user_router.delete("/{user_id}")
+def delete_user(user_id: int):
+    if user_id not in users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    del users_db[user_id]
+    return {"message": f"User {user_id} deleted successfully"}
 
+@user_router.post("/{user_id}/houses/{house_id}")
+def assign_house_to_user(user_id: int, house_id: int):
+    if user_id not in users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    users_db[user_id]["houses"].append(house_id)
+    return {"message": f"House {house_id} assigned to User {user_id}"}
+
+@user_router.post("/{user_id}/houses")
+def get_houses_from_user(user_id: int):
+    if user_id not in users_db:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return users_db[user_id]["houses"]
+
+
+app.include_router(user_router)

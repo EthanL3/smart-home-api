@@ -1,16 +1,17 @@
-from flask import Flask, request, jsonify
-from models.user import User
-app = Flask(__name__)
+from fastapi import FastAPI
+from routes.house_routes import house_router
+from routes.room_routes import room_router
+from routes.user_routes import user_router
+from routes.device_routes import device_router
 
-from routes.user_routes import user_bp
-from routes.house_routes import house_bp
-from routes.room_routes import room_bp
-from routes.device_routes import device_bp
+app = FastAPI(title="Smart Home API")
 
-app.register_blueprint(user_bp, url_prefix='/users')
-app.register_blueprint(house_bp, url_prefix='/houses')
-app.register_blueprint(room_bp, url_prefix='/rooms')
-app.register_blueprint(device_bp, url_prefix='/devices')
+# Registering Routers
+app.include_router(house_router)
+app.include_router(room_router)
+app.include_router(user_router)
+app.include_router(device_router)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
