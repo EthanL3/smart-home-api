@@ -11,6 +11,9 @@ houses_db = {}
 @house_router.post("/", response_model=HouseResponse)
 def create_house(house: HouseCreate):
     new_house_id = len(houses_db) + 1
+    for house_id in houses_db:
+        if houses_db[house_id]["address"] == house.address and houses_db[house_id]["city"] == house.city and houses_db[house_id]["state"] == house.state and houses_db[house_id]["zipcode"] == house.zipcode:
+            raise HTTPException(status_code=400, detail="House already exists")
     new_house = {"house_id": new_house_id, **house.model_dump()}
     houses_db[new_house_id] = new_house
     return new_house

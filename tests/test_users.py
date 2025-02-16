@@ -19,6 +19,12 @@ def test_create_user():
     assert "user_id" in response.json()
     assert response.json()["name"] == user_data["name"]
 
+def test_create_user_duplicate():
+    """Test creating a user with duplicate data"""
+    response = client.post("/users", json=user_data)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "User already exists"
+
 def test_get_user():
     """Test retrieving a user by ID"""
     response = client.get("/users/1")

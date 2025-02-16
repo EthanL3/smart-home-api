@@ -11,6 +11,9 @@ users_db = {}
 @user_router.post("", response_model=UserResponse)
 def create_user(user: UserCreate):
     new_user_id = len(users_db) + 1
+    for user_id in users_db:
+        if users_db[user_id]["username"] == user.username or users_db[user_id]["email"] == user.email or users_db[user_id]["phone"] == user.phone:
+            raise HTTPException(status_code=400, detail="User already exists")
     new_user = {"user_id": new_user_id, **user.model_dump()}
     users_db[new_user_id] = new_user
     return new_user

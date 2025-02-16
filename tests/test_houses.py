@@ -20,6 +20,11 @@ def test_create_house():
     assert "house_id" in response.json()
     assert response.json()["address"] == "123 Main St"
 
+def test_create_house_duplicate():
+    response = client.post("/houses/", json=house_data)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "House already exists"
+
 def test_get_house():
     response = client.get("/houses/1")
     assert response.status_code == 200
